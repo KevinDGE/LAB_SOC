@@ -167,7 +167,7 @@ class Background:
         users = ["root", "admin", "test", "oracle", "ubuntu", "user", "pi", "git"]
         for _ in range(28):
             ip = self.external_ip()
-            ts = self.at(self.rng.uniform(0, 24))
+            ts = self.at(self.rng.uniform(0, 23.5))  # margen para que la ráfaga no cruce de día
             for _ in range(self.rng.randint(1, 4)):
                 ts += timedelta(seconds=self.rng.randint(2, 40))
                 user = self.rng.choice(users)
@@ -178,7 +178,7 @@ class Background:
                                    invalid_user=user not in ("root", "ubuntu"))
         for _ in range(70):
             ip = self.external_ip()
-            ts = self.at(self.rng.uniform(0, 24))
+            ts = self.at(self.rng.uniform(0, 23.5))
             for port in self.rng.sample(COMMON_SCAN_PORTS, self.rng.randint(1, 5)):
                 ts += timedelta(seconds=self.rng.randint(1, 30))
                 if port in (22, 80, 443):

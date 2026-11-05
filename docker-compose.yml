@@ -1,0 +1,26 @@
+services:
+  soc-lab:
+    build:
+      context: .
+      target: runtime
+    image: soc-lab:latest
+    container_name: soc-lab
+    ports:
+      - "8000:8000"
+    environment:
+      SOC_LAB_SEED: "1337"   # cambia la semilla para regenerar el ruido de fondo
+    read_only: true
+    tmpfs:
+      - /app/data:uid=10001,gid=10001
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  tests:
+    build:
+      context: .
+      target: test
+    profiles: ["test"]
+    tmpfs:
+      - /tmp
