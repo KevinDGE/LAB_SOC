@@ -1,0 +1,41 @@
+id: SOC-009
+name: RDP desde un origen no autorizado
+status: stable
+severity: high
+description: >
+  Detecta inicios de sesión RDP (4624, LogonType 10) cuyo origen no es el jump
+  host de administración. La política de Acme Andina exige que toda sesión
+  remota interactiva pase por JUMP01, por lo que cualquier otro origen es una
+  desviación que merece investigación.
+mitre:
+  tactics: [Lateral Movement]
+  techniques:
+    - id: T1021.001
+      name: "Remote Services: Remote Desktop Protocol"
+      tactic: Lateral Movement
+data_sources: [windows]
+logic:
+  type: threshold
+  filter:
+    source: windows
+    event_code: "4624"
+    logon_type: 10
+  group_by: [src_ip, host]
+  window: 30m
+  threshold: 1
+exceptions:
+  - src_ip: {in: "$admin_sources"}
+severity_overrides:
+  - when: {host: {in: "$crown_jewels"}}
+    severity: critical
+summary: >
+  Sesión RDP de {users} en {host} desde {src_ip} (origen distinto de JUMP01).
+false_positives:
+  - Soporte de emergencia sin pasar por el jump host (debe estar documentado en un ticket).
+triage:
+  - ¿El origen es una estación de usuario? ¿Qué otras alertas tiene?
+  - ¿La cuenta usada corresponde a la persona asignada a la estación?
+response:
+  - Cerrar la sesión, aislar el origen y revisar la actividad realizada durante la sesión.
+references:
+  - https://attack.mitre.org/techniques/T1021/001/

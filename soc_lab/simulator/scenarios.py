@@ -37,6 +37,7 @@ class Scenario:
     end: datetime
     techniques: list[str]
     expected_rules: list[str]
+    assets: list[str] = field(default_factory=list)  # equipos/cuentas afectados
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
@@ -94,6 +95,7 @@ def ssh_bruteforce(logs: RawLogs, rng: random.Random, day: datetime) -> Scenario
         [attacker, "198.51.100.23"], _t(day, 2, 47), _t(day, 3, 32),
         ["T1046", "T1110.001", "T1078", "T1105"],
         ["SOC-005", "SOC-001", "SOC-004"],
+        ["srv-web-01", "deploy"],
         ["El usuario deploy admitía autenticación por contraseña (debería ser solo clave)."],
     )
 
@@ -134,6 +136,7 @@ def password_spray(logs: RawLogs, rng: random.Random, day: datetime) -> Scenario
         [attacker], _t(day, 11, 2), max(end, ts) + timedelta(minutes=1),
         ["T1110.003", "T1078"],
         ["SOC-003", "SOC-004"],
+        ["EXCH01", "r.medina", "e.vega"],
         ["Contraseña probada: patrón estacional (Primavera2026!)."],
     )
 
@@ -209,6 +212,7 @@ def lateral_movement(logs: RawLogs, rng: random.Random, day: datetime) -> Scenar
         [ws.ip, c2], _t(day, 13, 38), _t(day, 15, 30),
         ["T1071.001", "T1046", "T1018", "T1078.002", "T1021.002", "T1569.002", "T1021.001", "T1041"],
         ["SOC-006", "SOC-005", "SOC-007", "SOC-008", "SOC-009"],
+        ["WS-017", "FS01", "APP01", "DB01", "BACKUP01", admin],
         ["Las credenciales de adm.m.fuentes quedaron en memoria tras la sesión RDP de soporte de las 10:15."],
     )
 

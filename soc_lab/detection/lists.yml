@@ -1,0 +1,24 @@
+# Listas de referencia (allowlists / watchlists) usadas por las reglas con la
+# sintaxis "$nombre". Mantenerlas separadas de la lógica permite ajustar el
+# entorno sin tocar las reglas, igual que las lookups de un SIEM.
+
+# Escáneres de vulnerabilidades autorizados (SCAN01). Cambio CHG-2291.
+authorized_scanners:
+  - 10.10.5.5
+
+# Orígenes desde los que se permite administración remota (JUMP01).
+admin_sources:
+  - 10.10.5.10
+
+# Prefijos de cuentas de servicio (actividad máquina-a-máquina esperada).
+service_account_prefixes:
+  - svc_
+
+# Activos cuya afectación eleva la severidad.
+crown_jewels:
+  - DC01
+  - DB01
+  - BACKUP01
+
+internal_networks:
+  - 10.10.0.0/16

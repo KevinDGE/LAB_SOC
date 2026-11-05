@@ -1,0 +1,38 @@
+id: SOC-001
+name: Fuerza bruta SSH desde un mismo origen
+status: stable
+severity: medium
+description: >
+  Detecta múltiples autenticaciones SSH fallidas desde una misma IP contra un
+  mismo servidor en una ventana corta. Es el patrón clásico de adivinación de
+  contraseñas con diccionario contra servicios expuestos a Internet.
+mitre:
+  tactics: [Credential Access]
+  techniques:
+    - id: T1110.001
+      name: "Brute Force: Password Guessing"
+      tactic: Credential Access
+data_sources: [sshd]
+logic:
+  type: threshold
+  filter:
+    source: sshd
+    outcome: failure
+  group_by: [src_ip, host]
+  window: 5m
+  threshold: 10
+summary: >
+  {count} intentos SSH fallidos desde {src_ip} contra {host} en {duration_min} min
+  (usuarios: {users}).
+false_positives:
+  - Scripts de automatización con credenciales caducadas.
+  - Usuarios legítimos que olvidaron la contraseña (rara vez superan 10 intentos en 5 min).
+triage:
+  - ¿La IP de origen es interna o externa? Consultar reputación y geolocalización.
+  - ¿Hubo algún inicio de sesión exitoso desde la misma IP (ver SOC-004)?
+  - ¿Los usuarios probados existen en el sistema (invalid_user)?
+response:
+  - Bloquear la IP en el firewall perimetral si es externa.
+  - Restringir SSH a la VPN o al jump host y exigir autenticación por clave.
+references:
+  - https://attack.mitre.org/techniques/T1110/001/

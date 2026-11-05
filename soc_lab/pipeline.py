@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from soc_lab.parsers import parse_raw_dir
-from soc_lab.schema import Event
+from soc_lab.schema import Alert, Event
 
 
 def raw_dir(data_dir: Path) -> Path:
@@ -29,3 +29,34 @@ def normalize(data_dir: Path) -> list[Event]:
 def load_events(data_dir: Path) -> list[Event]:
     with events_path(data_dir).open(encoding="utf-8") as fh:
         return [Event.from_dict(json.loads(line)) for line in fh if line.strip()]
+
+
+def alerts_path(data_dir: Path) -> Path:
+    return data_dir / "alerts.json"
+
+
+def scenarios_path(data_dir: Path) -> Path:
+    return raw_dir(data_dir) / "scenarios.json"
+
+
+def detect(data_dir: Path) -> tuple[list[Alert], dict]:
+    """Ejecuta todas las reglas, evalúa contra el ground truth y guarda alertas."""
+    from soc_lab.detection.engine import load_rules, run_rules
+    from soc_lab.detection.evaluate import evaluate
+
+    rules = load_rules()
+    alerts = run_rules(rules, load_events(data_dir))
+    scenarios = json.loads(scenarios_path(data_dir).read_text(encoding="utf-8"))["scenarios"]
+    metrics = evaluate(alerts, scenarios)
+    payload = {
+        "rules_loaded": len(rules),
+        "metrics": metrics,
+        "alerts": [a.to_dict() for a in alerts],
+    }
+    alerts_path(data_dir).write_text(json.dumps(payload, indent=1, ensure_ascii=False), encoding="utf-8")
+    return alerts, metrics
+
+
+def load_alerts(data_dir: Path) -> tuple[list[Alert], dict]:
+    payload = json.loads(alerts_path(data_dir).read_text(encoding="utf-8"))
+    return [Alert.from_dict(a) for a in payload["alerts"]], payload["metrics"]

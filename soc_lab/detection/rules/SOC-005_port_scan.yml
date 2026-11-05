@@ -1,0 +1,43 @@
+id: SOC-005
+name: Escaneo de puertos contra un host
+status: stable
+severity: medium
+description: >
+  Detecta un origen que contacta 20 o más puertos de destino distintos en un
+  mismo host en 5 minutos (conexiones permitidas o denegadas). Si el origen es
+  interno la severidad sube a alta: indica un equipo comprometido haciendo
+  reconocimiento dentro de la red.
+mitre:
+  tactics: [Discovery]
+  techniques:
+    - id: T1046
+      name: Network Service Discovery
+      tactic: Discovery
+data_sources: [firewall]
+logic:
+  type: distinct
+  filter:
+    source: firewall
+  group_by: [src_ip, dst_ip]
+  distinct_field: dst_port
+  window: 5m
+  threshold: 20
+exceptions:
+  - src_ip: {in: "$authorized_scanners"}
+severity_overrides:
+  - when: {src_ip: {cidr: "$internal_networks"}}
+    severity: high
+summary: >
+  {src_ip} sondeó {distinct} puertos distintos de {dst_ip} en {duration_min} min
+  ({count} conexiones).
+false_positives:
+  - Escáneres de vulnerabilidades autorizados (suprimidos vía lista authorized_scanners).
+  - Herramientas de inventario o monitorización mal configuradas.
+triage:
+  - ¿Qué puertos respondieron (outcome=allowed)? ¿Hubo conexiones posteriores a ellos?
+  - Si el origen es interno, ¿quién usa el equipo y hay otras alertas sobre él?
+response:
+  - Externo - bloquear IP y revisar exposición de servicios.
+  - Interno - aislar el equipo y escalar a incidente.
+references:
+  - https://attack.mitre.org/techniques/T1046/
