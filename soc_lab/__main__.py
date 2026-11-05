@@ -40,6 +40,12 @@ def cmd_docs(args: argparse.Namespace) -> None:
     print(f"[docs] {write_docs(Path('docs/detection-rules.md'))}")
 
 
+def cmd_serve(args: argparse.Namespace) -> None:
+    from soc_lab.dashboard.app import create_app
+
+    create_app(args.data).run(host=args.host, port=args.port, debug=False)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="soc_lab", description="Laboratorio SOC con datos simulados")
     parser.add_argument("--data", type=Path, default=Path("data"), help="directorio de datos (default: data)")
@@ -54,6 +60,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     docs = sub.add_parser("docs", help="regenera docs/detection-rules.md desde los YAML")
     docs.set_defaults(func=cmd_docs)
+
+    serve = sub.add_parser("serve", help="levanta el dashboard web")
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=8000)
+    serve.set_defaults(func=cmd_serve)
     return parser
 
 

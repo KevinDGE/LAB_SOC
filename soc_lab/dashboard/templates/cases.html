@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sev %}
+{% block title %}Casos{% endblock %}
+{% block content %}
+<h1>Casos de investigación</h1>
+<p class="sub">Incidentes construidos a partir de alertas correlacionadas, con línea de tiempo y reporte.</p>
+{% if not cases %}
+<section class="card"><p class="muted">Aún no hay casos. Ejecuta <span class="mono">python -m soc_lab cases</span>.</p></section>
+{% endif %}
+{% endblock %}

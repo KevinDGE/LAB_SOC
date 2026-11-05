@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sev, alert_table %}
+{% block title %}Resumen{% endblock %}
+{% block content %}
+<h1>Resumen del turno</h1>
+<p class="sub">Acme Andina S.A. · {{ day.strftime('%d/%m/%Y') }} · 00:00–24:00 UTC · {{ data.rules | length }} reglas activas</p>
+
+{% set m = data.metrics %}
+{% set crit = data.alerts | selectattr('severity', 'equalto', 'critical') | list | length %}
+<section class="tiles" aria-label="Indicadores">
+  <div class="tile hero"><div class="label">Alertas generadas</div><div class="value">{{ data.alerts | length }}</div>
+    <div class="note">{{ crit }} críticas</div></div>
+  <div class="tile"><div class="label">Eventos analizados</div><div class="value">{{ '{:,}'.format(data.events | length) }}</div>
+    <div class="note">{{ volume.totals.firewall }} firewall · {{ volume.totals.windows }} Windows · {{ volume.totals.sshd }} SSH</div></div>
+  <div class="tile"><div class="label">Escenarios detectados</div><div class="value">{{ m.scenarios | selectattr('detected') | list | length }}/{{ m.scenarios | length }}</div>
+    <div class="note">reglas esperadas no disparadas: {{ m.scenarios | map(attribute='missed_rules') | sum(start=[]) | length }}</div></div>
+  <div class="tile"><div class="label">Alertas atribuibles a ataques</div><div class="value">{{ m.alerts_attributed }}/{{ m.alerts_total }}</div>
+    <div class="note">{{ m.unattributed_alerts | length }} falso(s) positivo(s) a revisar</div></div>
+  <div class="tile"><div class="label">Casos de investigación</div><div class="value">{{ data.cases | length }}</div>
+    <div class="note"><a href="{{ url_for('cases') }}">Ver casos</a></div></div>
+</section>
+
+<div class="grid">
+  <section class="card span-8">
+    <div class="card-head"><h2>Volumen de eventos por hora</h2><span class="hint">UTC · apilado por fuente</span></div>
+    <div class="legend">{% for key, label in volume.sources %}<span><span class="key s-{{ key }}"></span>{{ label }}</span>{% endfor %}</div>
+    <svg class="chart" viewBox="0 0 {{ volume.width }} {{ volume.height }}" role="img" aria-label="Eventos por hora apilados por fuente">
+      {% for t in volume.ticks %}
+        <line class="{{ 'baseline' if loop.first else 'grid-line' }}" x1="{{ volume.left }}" x2="{{ volume.right }}" y1="{{ t.y }}" y2="{{ t.y }}"/>
+        <text x="{{ volume.left - 6 }}" y="{{ t.y + 4 }}" text-anchor="end">{{ t.label }}</text>
+      {% endfor %}
+      {% for b in volume.bars %}
+        <g class="col">
+          {% for s in b.segments %}<path class="s-{{ s.key }}" d="{{ s.path }}"/>{% endfor %}
+          <rect class="hit" x="{{ b.hit_x }}" y="0" width="{{ b.hit_w }}" height="{{ volume.baseline }}" tabindex="0"
+                data-tip-value="{{ b.total }} eventos" data-tip-label="{{ '%02d' % b.hour }}:00–{{ '%02d' % b.hour }}:59 UTC"
+                data-tip-extra="{{ b.tip | join('\n') }}"><title>{{ '%02d' % b.hour }}:00 — {{ b.total }} eventos</title></rect>
+        </g>
+      {% endfor %}
+      {% for t in volume.xticks %}<text x="{{ t.x }}" y="{{ volume.height - 8 }}" text-anchor="middle">{{ t.label }}h</text>{% endfor %}
+    </svg>
+    <details class="table-view"><summary>Ver como tabla</summary>
+      <div class="scroll-x"><table><thead><tr><th>Hora</th>{% for k, l in volume.sources %}<th class="num">{{ l }}</th>{% endfor %}<th class="num">Total</th></tr></thead>
+      <tbody>{% for r in volume.rows %}<tr><td class="time">{{ r.hour }}</td>{% for k, l in volume.sources %}<td class="num">{{ r[k] }}</td>{% endfor %}<td class="num">{{ r.total }}</td></tr>{% endfor %}</tbody></table></div>
+    </details>
+  </section>
+
+  <section class="card span-4">
+    <div class="card-head"><h2>Alertas por severidad</h2></div>
+    {% set peak = severities | map(attribute='count') | max %}
+    <div class="sevbar">
+      {% for s in severities %}
+      <div class="sevrow">
+        {{ sev(s.key) }}
+        <div class="track" role="img" aria-label="{{ s.label }}: {{ s.count }}"><div class="fill {{ s.key }}" style="width: {{ (s.count / (peak or 1) * 100) | round(1) }}%"></div></div>
+        <span class="n">{{ s.count }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <h3>Orígenes con más alertas</h3>
+    <table>
+      <thead><tr><th>IP de origen</th><th>Peor severidad</th><th class="num">Alertas</th></tr></thead>
+      <tbody>{% for s in top_sources %}
+        <tr><td class="mono"><a href="{{ url_for('alerts', q=s.ip) }}">{{ s.ip }}</a></td><td>{{ sev(s.severity) }}</td><td class="num">{{ s.alerts }}</td></tr>
+      {% endfor %}</tbody>
+    </table>
+  </section>
+
+  <section class="card span-12">
+    <div class="card-head"><h2>Línea de tiempo de alertas</h2><span class="hint">cada barra va de la primera a la última evidencia · clic para abrir</span></div>
+    <div class="legend">{% for s in severities %}{% if s.count %}<span>{{ sev(s.key) }}</span>{% endif %}{% endfor %}</div>
+    <div class="scroll-x">
+    <svg class="chart wide" viewBox="0 0 {{ timeline.width }} {{ timeline.height }}" role="img" aria-label="Alertas por regla a lo largo del día" style="min-width: 760px">
+      {% for l in timeline.lanes %}
+        <rect class="lane-bg" x="{{ timeline.left }}" y="{{ l.y + 3 }}" width="{{ timeline.right - timeline.left }}" height="{{ timeline.lane_h - 6 }}" rx="4"/>
+        <text class="lane-label" x="{{ timeline.left - 8 }}" y="{{ l.y + 18 }}" text-anchor="end">{{ l.rule_id }} · {{ l.name[:24] }}{{ '…' if l.name | length > 24 }}</text>
+      {% endfor %}
+      {% for t in timeline.xticks %}
+        <line class="grid-line" x1="{{ t.x }}" x2="{{ t.x }}" y1="4" y2="{{ timeline.bottom + 2 }}"/>
+        <text x="{{ t.x }}" y="{{ timeline.bottom + 18 }}" text-anchor="{{ 'end' if loop.last else 'middle' }}">{{ t.label }}</text>
+      {% endfor %}
+      {% for mk in timeline.marks %}
+        <g class="mark" tabindex="0" data-href="{{ url_for('alert_detail', alert_id=mk.alert_id) }}"
+           data-tip-value="{{ mk.tip_value }}" data-tip-label="{{ mk.tip_label }}" data-tip-extra="{{ mk.tip_extra }}">
+          <rect x="{{ mk.x - 4 }}" y="{{ mk.y - 6 }}" width="{{ mk.w + 8 }}" height="{{ mk.h + 12 }}" fill="transparent"/>
+          <rect class="vis m-{{ mk.severity }}" x="{{ mk.x }}" y="{{ mk.y }}" width="{{ mk.w }}" height="{{ mk.h }}" rx="4"/>
+          <title>{{ mk.tip_label }} — {{ mk.tip_extra }}</title>
+        </g>
+      {% endfor %}
+    </svg>
+    </div>
+  </section>
+
+  <section class="card span-12">
+    <div class="card-head"><h2>Cobertura MITRE ATT&amp;CK</h2><span class="hint">técnicas cubiertas por reglas · intensidad = alertas observadas</span></div>
+    <div class="matrix">
+      {% for col in matrix %}
+      <div>
+        <div class="col-head">{{ col.tactic }}</div>
+        {% for c in col.cells %}
+        <a class="tcell lvl-{{ c.level }}" href="{{ url_for('rules') }}#{{ c.rules[0] }}" title="{{ c.name }} — reglas: {{ c.rules | join(', ') }}">
+          <div class="tid">{{ c.id }}</div>
+          <div>{{ c.name }}</div>
+          <div class="meta">{{ c.alerts }} alerta{{ '' if c.alerts == 1 else 's' }} · {{ c.rules | join(', ') }}</div>
+        </a>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="matrix-legend">Alertas: <span class="sw lvl-0"></span>0 <span class="sw lvl-1"></span><span class="sw lvl-2"></span><span class="sw lvl-3"></span><span class="sw lvl-4"></span><span class="sw lvl-5"></span>más</div>
+  </section>
+
+  <section class="card span-12">
+    <div class="card-head"><h2>Alertas recientes</h2><a href="{{ url_for('alerts') }}">Ver todas →</a></div>
+    {{ alert_table(data.alerts | sort(attribute='first_seen', reverse=True)) }}
+  </section>
+</div>
+{% endblock %}

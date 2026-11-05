@@ -60,3 +60,14 @@ def detect(data_dir: Path) -> tuple[list[Alert], dict]:
 def load_alerts(data_dir: Path) -> tuple[list[Alert], dict]:
     payload = json.loads(alerts_path(data_dir).read_text(encoding="utf-8"))
     return [Alert.from_dict(a) for a in payload["alerts"]], payload["metrics"]
+
+
+def cases_path(data_dir: Path) -> Path:
+    return data_dir / "cases.json"
+
+
+def load_cases(data_dir: Path) -> list[dict]:
+    path = cases_path(data_dir)
+    if not path.exists():
+        return []
+    return json.loads(path.read_text(encoding="utf-8"))["cases"]

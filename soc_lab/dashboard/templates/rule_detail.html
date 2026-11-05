@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sev, techniques, alert_table %}
+{% block title %}{{ rule.id }}{% endblock %}
+{% block content %}
+<p class="muted"><a href="{{ url_for('rules') }}">← Reglas</a></p>
+<h1>{{ rule.id }} · {{ rule.name }}</h1>
+<p class="sub">{{ sev(rule.severity) }} · {{ rule.status }} · <span class="mono">{{ rule.path }}</span></p>
+<div class="grid">
+  <section class="card span-8">
+    <h2>Descripción</h2>
+    <p>{{ rule.description }}</p>
+    <dl class="kv">
+      <dt>Tácticas</dt><dd>{{ rule.tactics | join(', ') }}</dd>
+      <dt>Técnicas</dt><dd>{% for t in rule.techniques %}<div>{{ techniques([t]) }} {{ t.name }}</div>{% endfor %}</dd>
+      <dt>Fuentes</dt><dd>{{ rule.data_sources | join(', ') }}</dd>
+    </dl>
+    <h3>Lógica</h3>
+    <pre>{{ rule.logic | tojson(indent=2) }}</pre>
+    {% if rule.exceptions %}<h3>Excepciones</h3><pre>{{ rule.exceptions | tojson(indent=2) }}</pre>{% endif %}
+    {% if rule.severity_overrides %}<h3>Ajustes de severidad</h3><pre>{{ rule.severity_overrides | tojson(indent=2) }}</pre>{% endif %}
+  </section>
+  <section class="card span-4">
+    <h3>Triage</h3><ul class="clean">{% for t in rule.triage %}<li>{{ t }}</li>{% endfor %}</ul>
+    <h3>Respuesta</h3><ul class="clean">{% for t in rule.response %}<li>{{ t }}</li>{% endfor %}</ul>
+    <h3>Falsos positivos</h3><ul class="clean">{% for t in rule.false_positives %}<li>{{ t }}</li>{% endfor %}</ul>
+    <h3>Referencias</h3><ul class="clean">{% for t in rule.references %}<li><a href="{{ t }}" target="_blank" rel="noopener">{{ t }}</a></li>{% endfor %}</ul>
+  </section>
+  <section class="card span-12"><h2>Alertas de esta regla ({{ alerts | length }})</h2>{{ alert_table(alerts) }}</section>
+</div>
+{% endblock %}

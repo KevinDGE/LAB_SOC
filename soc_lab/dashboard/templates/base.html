@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SOC Lab{% endblock %} · Acme Andina</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="{{ url_for('overview') }}"><span class="dot"></span>SOC Lab</a>
+  <nav aria-label="Principal">
+    <a href="{{ url_for('overview') }}" class="{{ 'active' if nav == 'overview' }}">Resumen</a>
+    <a href="{{ url_for('alerts') }}" class="{{ 'active' if nav in ('alerts', 'alert_detail') }}">Alertas</a>
+    <a href="{{ url_for('cases') }}" class="{{ 'active' if nav in ('cases', 'case_detail') }}">Casos</a>
+    <a href="{{ url_for('rules') }}" class="{{ 'active' if nav in ('rules', 'rule_detail') }}">Reglas</a>
+  </nav>
+  <span class="spacer"></span>
+  <span class="badge-sim" title="Todos los datos son ficticios; IPs externas RFC 5737">Datos simulados</span>
+  <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Cambiar tema claro/oscuro">◐</button>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+<div id="tooltip" role="tooltip"></div>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

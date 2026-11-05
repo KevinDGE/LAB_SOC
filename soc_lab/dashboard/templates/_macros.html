@@ -1,0 +1,51 @@
+{% macro sev(s) -%}
+<span class="sev sev-{{ s }}"><span class="ico" aria-hidden="true">{{ severity_icons[s] }}</span>{{ severity_labels[s] }}</span>
+{%- endmacro %}
+
+{% macro techniques(list) -%}
+{% for t in list %}<a class="pill mono" href="https://attack.mitre.org/techniques/{{ t.id | replace('.', '/') }}/" target="_blank" rel="noopener" title="{{ t.name }}">{{ t.id }}</a>{% endfor %}
+{%- endmacro %}
+
+{% macro alert_table(alerts, show_case=False, cases=None) -%}
+<div class="scroll-x">
+<table>
+  <thead><tr><th>Inicio (UTC)</th><th>Severidad</th><th>Regla</th><th>Resumen</th><th>ATT&amp;CK</th><th class="num">Eventos</th></tr></thead>
+  <tbody>
+  {% for a in alerts %}
+    <tr>
+      <td class="time">{{ a.first_seen | hms }}</td>
+      <td>{{ sev(a.severity) }}</td>
+      <td class="mono"><a href="{{ url_for('alert_detail', alert_id=a.alert_id) }}">{{ a.rule_id }}</a></td>
+      <td><a href="{{ url_for('alert_detail', alert_id=a.alert_id) }}">{{ a.rule_name }}</a><div class="muted">{{ a.summary }}</div></td>
+      <td>{{ techniques(a.techniques) }}</td>
+      <td class="num">{{ a.event_count }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="muted">Sin alertas para este filtro.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{%- endmacro %}
+
+{% macro evidence_table(events, limit=200) -%}
+<div class="scroll-x">
+<table>
+  <thead><tr><th>Hora</th><th>Fuente</th><th>Host</th><th>Usuario</th><th>Origen → destino</th><th>Resultado</th><th>Log crudo</th></tr></thead>
+  <tbody>
+  {% for e in events[:limit] %}
+    <tr>
+      <td class="time">{{ e.timestamp | hms }}</td>
+      <td>{{ e.source }} <span class="muted mono">{{ e.event_code }}</span></td>
+      <td>{{ e.host or '—' }}</td>
+      <td>{{ e.user or '—' }}</td>
+      <td class="mono">{{ e.src_ip or '—' }}{% if e.src_port %}:{{ e.src_port }}{% endif %} → {{ e.dst_ip or '—' }}{% if e.dst_port %}:{{ e.dst_port }}{% endif %}</td>
+      <td>{{ e.outcome }}</td>
+      <td class="raw mono">{{ e.raw }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if events | length > limit %}<p class="muted">Mostrando {{ limit }} de {{ events | length }} eventos. El JSON completo está en la API.</p>{% endif %}
+{%- endmacro %}

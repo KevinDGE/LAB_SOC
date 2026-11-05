@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import alert_table %}
+{% block title %}Alertas{% endblock %}
+{% block content %}
+<h1>Alertas</h1>
+<p class="sub">{{ alerts | length }} de {{ data.alerts | length }} alertas</p>
+<form class="filters" method="get" role="search">
+  <select name="severity" aria-label="Severidad">
+    <option value="">Todas las severidades</option>
+    {% for s in ['critical', 'high', 'medium', 'low'] %}<option value="{{ s }}" {{ 'selected' if args.get('severity') == s }}>{{ severity_labels[s] }}</option>{% endfor %}
+  </select>
+  <select name="rule" aria-label="Regla">
+    <option value="">Todas las reglas</option>
+    {% for r in data.rules %}<option value="{{ r.id }}" {{ 'selected' if args.get('rule') == r.id }}>{{ r.id }} · {{ r.name }}</option>{% endfor %}
+  </select>
+  <select name="tactic" aria-label="Táctica">
+    <option value="">Todas las tácticas</option>
+    {% for t in tactics %}<option value="{{ t }}" {{ 'selected' if args.get('tactic') == t }}>{{ t }}</option>{% endfor %}
+  </select>
+  <select name="sort" aria-label="Orden">
+    <option value="">Orden cronológico</option>
+    <option value="severity" {{ 'selected' if args.get('sort') == 'severity' }}>Por severidad</option>
+  </select>
+  <input type="search" name="q" value="{{ args.get('q', '') }}" placeholder="IP, usuario, host…" aria-label="Buscar">
+  <button class="btn" type="submit">Filtrar</button>
+  <a class="btn ghost" href="{{ url_for('alerts') }}">Limpiar</a>
+</form>
+<section class="card">{{ alert_table(alerts) }}</section>
+{% endblock %}
