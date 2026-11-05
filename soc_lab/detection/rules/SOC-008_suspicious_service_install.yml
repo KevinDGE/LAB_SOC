@@ -1,0 +1,44 @@
+id: SOC-008
+name: Instalación de servicio sospechoso (ejecución remota)
+status: stable
+severity: high
+description: >
+  Detecta eventos 7045 (nuevo servicio) cuyo ImagePath corresponde a
+  herramientas de ejecución remota (PsExec) o a intérpretes de comandos
+  (cmd.exe, PowerShell, %COMSPEC%), o reside en rutas temporales. Los servicios
+  legítimos apuntan a binarios instalados en Program Files o System32.
+mitre:
+  tactics: [Execution, Persistence]
+  techniques:
+    - id: T1569.002
+      name: "System Services: Service Execution"
+      tactic: Execution
+    - id: T1543.003
+      name: "Create or Modify System Process: Windows Service"
+      tactic: Persistence
+data_sources: [windows]
+logic:
+  type: threshold
+  filter:
+    source: windows
+    event_code: "7045"
+    extra.image_path:
+      contains_any: ["PSEXESVC", "\\ADMIN$\\", "%COMSPEC%", "cmd.exe", "powershell", "\\Temp\\", "\\Users\\Public\\"]
+  group_by: [host]
+  window: 10m
+  threshold: 1
+severity_overrides:
+  - when: {host: {in: "$crown_jewels"}}
+    severity: critical
+summary: >
+  Servicio {service} instalado en {host} con ImagePath sospechoso: {image_path}
+false_positives:
+  - Uso legítimo de PsExec por el equipo de TI (debería hacerse desde el jump host y con ticket).
+triage:
+  - ¿Qué cuenta inició sesión en el host justo antes (4624 tipo 3)?
+  - Decodificar la línea de comando y buscar el binario en otros equipos.
+response:
+  - Aislar el host, detener y eliminar el servicio, recolectar el binario para análisis.
+references:
+  - https://attack.mitre.org/techniques/T1569/002/
+  - https://attack.mitre.org/techniques/T1543/003/

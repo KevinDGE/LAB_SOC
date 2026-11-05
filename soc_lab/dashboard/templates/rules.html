@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sev, techniques %}
+{% block title %}Reglas{% endblock %}
+{% block content %}
+<h1>Reglas de detección</h1>
+<p class="sub">{{ rules | length }} reglas declarativas en <span class="mono">soc_lab/detection/rules/</span>, mapeadas a MITRE ATT&amp;CK.</p>
+<section class="card">
+<div class="scroll-x">
+<table>
+  <thead><tr><th>ID</th><th>Regla</th><th>Severidad base</th><th>Tácticas</th><th>Técnicas</th><th>Lógica</th><th class="num">Alertas</th></tr></thead>
+  <tbody>
+  {% for r in rules %}
+    <tr id="{{ r.id }}">
+      <td class="mono"><a href="{{ url_for('rule_detail', rule_id=r.id) }}">{{ r.id }}</a></td>
+      <td><a href="{{ url_for('rule_detail', rule_id=r.id) }}">{{ r.name }}</a></td>
+      <td>{{ sev(r.severity) }}</td>
+      <td>{{ r.tactics | join(', ') }}</td>
+      <td>{{ techniques(r.techniques) }}</td>
+      <td><span class="pill">{{ r.type }}</span> {{ r.logic.window }}</td>
+      <td class="num">{{ fired[r.id] }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+</section>
+{% endblock %}

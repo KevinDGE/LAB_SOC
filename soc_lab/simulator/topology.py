@@ -82,3 +82,19 @@ def asset_by_ip(ip: str) -> Asset | None:
         if asset.ip == ip:
             return asset
     return None
+
+
+# Cuentas privilegiadas y de servicio (no son empleados de negocio).
+ADMIN_ACCOUNTS = ["adm.l.cabrera", "adm.m.fuentes"]
+SERVICE_ACCOUNTS = ["svc_backup", "svc_sql", "svc_erp"]
+AUTHORIZED_SCANNERS = ["10.10.5.5"]  # SCAN01
+ADMIN_SOURCES = ["10.10.5.10"]  # JUMP01
+
+INTERNAL_CIDR = "10.10.0.0/16"
+DOCUMENTATION_CIDRS = ["192.0.2.0/24", "198.51.100.0/24", "203.0.113.0/24"]
+
+
+def workstation_of(account: str) -> Asset:
+    """Cada empleado tiene asignada una estación fija (WS-001 → primera cuenta)."""
+    index = employee_accounts().index(account)
+    return workstations()[index]

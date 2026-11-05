@@ -1,0 +1,39 @@
+id: SOC-002
+name: Fallos de autenticación repetidos contra una cuenta Windows
+status: stable
+severity: medium
+description: >
+  Detecta 10 o más eventos 4625 para la misma cuenta en el mismo equipo en
+  10 minutos. Indica adivinación de contraseña dirigida a una cuenta concreta,
+  aunque también es típico de credenciales caducadas guardadas en tareas
+  programadas o servicios.
+mitre:
+  tactics: [Credential Access]
+  techniques:
+    - id: T1110.001
+      name: "Brute Force: Password Guessing"
+      tactic: Credential Access
+data_sources: [windows]
+logic:
+  type: threshold
+  filter:
+    source: windows
+    event_code: "4625"
+  group_by: [user, host]
+  window: 10m
+  threshold: 10
+summary: >
+  {count} logons fallidos para {user} en {host} desde {src_ips} en {duration_min} min.
+false_positives:
+  - "Cuentas de servicio con contraseña expirada (SubStatus 0xC0000071) o cambiada (0xC000006A)."
+  - Unidades de red mapeadas con credenciales antiguas.
+triage:
+  - Revisar Status/SubStatus del 4625 (contraseña errónea vs. expirada vs. cuenta bloqueada).
+  - ¿El origen es un servidor que ejecuta tareas con esa cuenta?
+  - ¿Existe un 4624 posterior para la misma cuenta desde el mismo origen?
+response:
+  - Si es benigno, actualizar la credencial y documentar el ajuste.
+  - Si es malicioso, bloquear el origen y forzar cambio de contraseña.
+references:
+  - https://attack.mitre.org/techniques/T1110/001/
+  - https://learn.microsoft.com/windows/security/threat-protection/auditing/event-4625

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sev, techniques, evidence_table %}
+{% block title %}{{ alert.alert_id }}{% endblock %}
+{% block content %}
+<p class="muted"><a href="{{ url_for('alerts') }}">← Alertas</a></p>
+<h1>{{ alert.rule_name }}</h1>
+<p class="sub">{{ sev(alert.severity) }} · <span class="mono">{{ alert.alert_id }}</span>
+  {% if case %} · parte de <a href="{{ url_for('case_detail', case_id=case.case_id) }}">{{ case.case_id }}</a>{% endif %}</p>
+<div class="grid">
+  <section class="card span-8">
+    <h2>Resumen</h2>
+    <p>{{ alert.summary }}</p>
+    <dl class="kv">
+      <dt>Primera evidencia</dt><dd class="mono">{{ alert.first_seen.strftime('%Y-%m-%d %H:%M:%S') }} UTC</dd>
+      <dt>Última evidencia</dt><dd class="mono">{{ alert.last_seen.strftime('%Y-%m-%d %H:%M:%S') }} UTC</dd>
+      <dt>Eventos</dt><dd>{{ alert.event_count }}</dd>
+      <dt>Agrupado por</dt><dd>{% for k, v in alert.group.items() %}<span class="pill"><span class="mono">{{ k }}</span> = {{ v }}</span>{% endfor %}</dd>
+      <dt>Tácticas</dt><dd>{{ alert.tactic | join(', ') }}</dd>
+      <dt>Técnicas</dt><dd>{{ techniques(alert.techniques) }} {% for t in alert.techniques %}<div class="muted">{{ t.id }} · {{ t.name }}</div>{% endfor %}</dd>
+      {% for k, vals in alert.entities.items() %}
+      <dt>{{ {'users': 'Usuarios', 'src_ips': 'IPs origen', 'dst_ips': 'IPs destino', 'hosts': 'Hosts', 'services': 'Servicios'}[k] }}</dt>
+      <dd>{% for v in vals[:12] %}<a class="pill mono" href="{{ url_for('alerts', q=v) }}">{{ v }}</a>{% endfor %}{% if vals | length > 12 %} <span class="muted">+{{ vals | length - 12 }}</span>{% endif %}</dd>
+      {% endfor %}
+    </dl>
+  </section>
+  <section class="card span-4">
+    <h2>Guía de triage · <a class="mono" href="{{ url_for('rule_detail', rule_id=rule.id) }}">{{ rule.id }}</a></h2>
+    <h3>Preguntas</h3><ul class="clean">{% for t in rule.triage %}<li>{{ t }}</li>{% endfor %}</ul>
+    <h3>Respuesta</h3><ul class="clean">{% for t in rule.response %}<li>{{ t }}</li>{% endfor %}</ul>
+    <h3>Falsos positivos conocidos</h3><ul class="clean">{% for t in rule.false_positives %}<li>{{ t }}</li>{% endfor %}</ul>
+  </section>
+  <section class="card span-12">
+    <div class="card-head"><h2>Evidencia</h2><a href="{{ url_for('api_alert', alert_id=alert.alert_id) }}">JSON</a></div>
+    {{ evidence_table(alert.evidence) }}
+  </section>
+</div>
+{% endblock %}

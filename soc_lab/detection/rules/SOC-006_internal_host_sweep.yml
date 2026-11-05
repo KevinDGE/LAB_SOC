@@ -1,0 +1,43 @@
+id: SOC-006
+name: Barrido de hosts internos en un mismo puerto
+status: stable
+severity: high
+description: >
+  Detecta un origen que contacta 10 o más IPs internas distintas en el mismo
+  puerto en 10 minutos (p. ej. 445/SMB o 3389/RDP). Es el reconocimiento típico
+  previo al movimiento lateral. Solo considera destinos internos para no
+  disparar con la navegación web normal.
+mitre:
+  tactics: [Discovery]
+  techniques:
+    - id: T1018
+      name: Remote System Discovery
+      tactic: Discovery
+    - id: T1046
+      name: Network Service Discovery
+      tactic: Discovery
+data_sources: [firewall]
+logic:
+  type: distinct
+  filter:
+    source: firewall
+    dst_ip: {cidr: "$internal_networks"}
+  group_by: [src_ip, dst_port]
+  distinct_field: dst_ip
+  window: 10m
+  threshold: 10
+exceptions:
+  - src_ip: {in: "$authorized_scanners"}
+summary: >
+  {src_ip} contactó {distinct} hosts internos distintos en el puerto {dst_port}
+  en {duration_min} min.
+false_positives:
+  - Escáneres autorizados, agentes de inventario o servidores de despliegue (SCCM).
+triage:
+  - ¿El origen es una estación de usuario? Las estaciones no deberían barrer subredes.
+  - ¿Siguen logons de red (4624 tipo 3) desde ese origen a los hosts que respondieron?
+response:
+  - Aislar el equipo de origen y preservar evidencia (memoria y disco).
+references:
+  - https://attack.mitre.org/techniques/T1018/
+  - https://attack.mitre.org/techniques/T1046/

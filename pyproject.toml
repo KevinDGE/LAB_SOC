@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "soc-lab"
+version = "1.0.0"
+description = "Laboratorio SOC con datos simulados: generación de logs, detección mapeada a MITRE ATT&CK, dashboard y casos de investigación."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["Flask>=3.0", "PyYAML>=6.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+soc-lab = "soc_lab.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["soc_lab*"]
+
+[tool.setuptools.package-data]
+soc_lab = ["detection/*.yml", "detection/rules/*.yml", "dashboard/templates/*.html", "dashboard/static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

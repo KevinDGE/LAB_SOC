@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sev, alert_table %}
+{% block title %}{{ case.case_id }}{% endblock %}
+{% block content %}
+<p class="muted"><a href="{{ url_for('cases') }}">← Casos</a></p>
+<h1>{{ case.case_id }} · {{ case.title }}</h1>
+<p class="sub">{{ sev(case.severity) }} · {{ case.status }} · {{ case.classification }}</p>
+
+{% set m = case.metrics %}
+<section class="tiles" aria-label="Métricas del caso">
+  <div class="tile"><div class="label">Primera actividad maliciosa</div><div class="value">{{ m.first_malicious | ts_hms }}</div><div class="note">UTC</div></div>
+  <div class="tile"><div class="label">Tiempo hasta la primera alerta</div><div class="value">{{ m.time_to_detect_min }} min</div><div class="note">{{ m.first_alert | ts_hms }} UTC</div></div>
+  <div class="tile"><div class="label">Duración</div><div class="value">{{ m.duration_min }} min</div><div class="note">hasta {{ m.last_activity | ts_hms }} UTC</div></div>
+  <div class="tile"><div class="label">Alertas correlacionadas</div><div class="value">{{ m.alerts }}</div><div class="note">{{ m.events }} eventos revisados</div></div>
+</section>
+
+<div class="grid">
+  <section class="card span-8 report">
+    <h2>Resumen ejecutivo</h2>
+    <p>{{ case.summary }}</p>
+    <h2>Línea de tiempo</h2>
+    <ol class="timeline">
+    {% for t in case.timeline %}
+      <li class="{{ 'alert' if t.kind == 'alert' else ('ctx' if t.kind == 'activity' else '') }}">
+        <div class="when mono">{{ t.ts | ts_hms }}{% if t.end and t.end != t.ts %}–{{ t.end | ts_hms }}{% endif %}
+          · {{ {'alert': 'Alerta', 'activity': 'Actividad', 'event': 'Evento'}[t.kind] }}</div>
+        <div class="what">{% if t.alert_id %}<a href="{{ url_for('alert_detail', alert_id=t.alert_id) }}">{{ t.title }}</a> {{ sev(t.severity) }}{% else %}{{ t.title }}{% endif %}</div>
+        <div>{{ t.detail }}</div>
+        <div class="tags">{% for tid in t.techniques %}<a class="pill mono" href="https://attack.mitre.org/techniques/{{ tid | replace('.', '/') }}/" target="_blank" rel="noopener">{{ tid }}</a>{% endfor %}<span class="pill">{{ t.source }}</span></div>
+      </li>
+    {% endfor %}
+    </ol>
+    <h2>Análisis técnico</h2>
+    {% for p in case.analysis %}<p>{{ p | md_inline }}</p>{% endfor %}
+    <h3>Evidencia cruda (extracto)</h3>
+    <pre>{{ case.evidence_samples | join('\n') }}</pre>
+  </section>
+
+  <section class="card span-4">
+    <h2>Alcance</h2>
+    <h3>Activos</h3><ul class="clean">{% for h in case.scope.hosts %}<li>{{ h }}</li>{% endfor %}</ul>
+    <h3>Cuentas</h3><ul class="clean">{% for a in case.scope.accounts %}<li>{{ a }}</li>{% endfor %}</ul>
+    <p class="muted">{{ case.scope.not_affected }}</p>
+    <h3>Indicadores de compromiso</h3>
+    <table><thead><tr><th>Indicador</th><th>Rol</th></tr></thead><tbody>
+      {% for i in case.iocs %}<tr><td class="mono">{{ i.value }}</td><td>{{ i.role }}<div class="muted">{{ i.type }}</div></td></tr>{% endfor %}
+    </tbody></table>
+    <h3>MITRE ATT&amp;CK</h3>
+    <table><thead><tr><th>Técnica</th><th>Evidencia</th></tr></thead><tbody>
+      {% for r in case.attack %}<tr><td><a class="mono" href="https://attack.mitre.org/techniques/{{ r.id | replace('.', '/') }}/" target="_blank" rel="noopener">{{ r.id }}</a><div class="muted">{{ r.tactic }} · {{ r.name }}</div></td><td>{{ r.evidence | join(', ') }}</td></tr>{% endfor %}
+    </tbody></table>
+    {% for phase, actions in case.response.items() %}
+      <h3>{{ phase }}</h3><ul class="clean">{% for a in actions %}<li>{{ a | md_inline }}</li>{% endfor %}</ul>
+    {% endfor %}
+    <h3>Lecciones y brechas</h3><ul class="clean">{% for l in case.lessons %}<li>{{ l | md_inline }}</li>{% endfor %}</ul>
+  </section>
+
+  <section class="card span-12"><h2>Alertas del caso</h2>{{ alert_table(alerts) }}</section>
+</div>
+{% endblock %}

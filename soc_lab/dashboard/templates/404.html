@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}No encontrado{% endblock %}
+{% block content %}
+<h1>No encontrado</h1>
+<p class="sub">El recurso solicitado no existe. <a href="{{ url_for('overview') }}">Volver al resumen</a>.</p>
+{% endblock %}

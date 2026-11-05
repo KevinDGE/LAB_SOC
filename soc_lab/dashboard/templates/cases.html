@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sev %}
+{% block title %}Casos{% endblock %}
+{% block content %}
+<h1>Casos de investigación</h1>
+<p class="sub">Incidentes construidos a partir de alertas correlacionadas, con línea de tiempo y reporte. Los reportes Markdown están en <span class="mono">reports/</span>.</p>
+{% if not cases %}
+<section class="card"><p class="muted">Aún no hay casos. Ejecuta <span class="mono">python -m soc_lab cases</span>.</p></section>
+{% endif %}
+<div class="grid">
+{% for c in cases %}
+  <a class="card span-4 case-card" href="{{ url_for('case_detail', case_id=c.case_id) }}">
+    <div class="card-head"><span class="mono muted">{{ c.case_id }}</span>{{ sev(c.severity) }}</div>
+    <h2 class="case-title">{{ c.title }}</h2>
+    <p class="muted">{{ c.classification }}</p>
+    <dl class="kv compact">
+      <dt>Ventana</dt><dd class="mono">{{ c.metrics.first_malicious | ts_hms }}–{{ c.metrics.last_activity | ts_hms }} UTC</dd>
+      <dt>Duración</dt><dd>{{ c.metrics.duration_min }} min</dd>
+      <dt>Alertas</dt><dd>{{ c.metrics.alerts }} · {{ c.alert_rules | join(', ') }}</dd>
+      <dt>Detección</dt><dd>{{ c.metrics.time_to_detect_min }} min tras la primera actividad</dd>
+    </dl>
+  </a>
+{% endfor %}
+</div>
+{% endblock %}

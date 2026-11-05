@@ -1,0 +1,50 @@
+id: SOC-007
+name: Movimiento lateral - logons de red a múltiples hosts
+status: stable
+severity: high
+description: >
+  Detecta una misma cuenta iniciando sesión de red (4624, LogonType 3) desde un
+  mismo origen en 3 o más equipos distintos en 30 minutos. Es la huella de uso
+  de credenciales robadas sobre SMB/recursos administrativos (PsExec, WMI,
+  copia a ADMIN$). Excluye cuentas de servicio y el jump host de administración.
+mitre:
+  tactics: [Lateral Movement, Defense Evasion]
+  techniques:
+    - id: T1021.002
+      name: "Remote Services: SMB/Windows Admin Shares"
+      tactic: Lateral Movement
+    - id: T1078.002
+      name: "Valid Accounts: Domain Accounts"
+      tactic: Defense Evasion
+data_sources: [windows]
+logic:
+  type: distinct
+  filter:
+    source: windows
+    event_code: "4624"
+    logon_type: 3
+  group_by: [user, src_ip]
+  distinct_field: host
+  window: 30m
+  threshold: 3
+exceptions:
+  - user: {startswith: "$service_account_prefixes"}
+  - src_ip: {in: "$admin_sources"}
+severity_overrides:
+  - when: {host: {in: "$crown_jewels"}}
+    severity: critical
+summary: >
+  {user} inició sesión de red desde {src_ip} en {distinct} equipos ({hosts})
+  en {duration_min} min.
+false_positives:
+  - Administradores trabajando fuera del jump host (debería corregirse por política).
+  - Herramientas de gestión que usan cuentas nominales.
+triage:
+  - ¿La cuenta es privilegiada? ¿El origen es su equipo habitual?
+  - Buscar instalación de servicios (7045) o tareas programadas en los destinos.
+  - Revisar si la cuenta inició sesión antes en el equipo origen (robo de credenciales en memoria).
+response:
+  - Deshabilitar la cuenta, rotar credenciales privilegiadas y aislar el origen.
+references:
+  - https://attack.mitre.org/techniques/T1021/002/
+  - https://attack.mitre.org/techniques/T1078/002/

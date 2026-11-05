@@ -1,0 +1,50 @@
+id: SOC-004
+name: Autenticación exitosa tras múltiples fallos
+status: stable
+severity: critical
+description: >
+  Correlación en secuencia: 10 o más fallos de autenticación desde un origen
+  seguidos de un inicio de sesión exitoso desde ese mismo origen en 30 minutos.
+  Convierte una alerta de "intento" (SOC-001/002/003) en una de "probable
+  compromiso" de credenciales válidas.
+mitre:
+  tactics: [Credential Access, Initial Access]
+  techniques:
+    - id: T1110
+      name: Brute Force
+      tactic: Credential Access
+    - id: T1078
+      name: Valid Accounts
+      tactic: Initial Access
+data_sources: [windows, sshd]
+logic:
+  type: sequence
+  filter:
+    category: authentication
+  group_by: [src_ip]
+  window: 30m
+  steps:
+    - name: fallos
+      filter: {outcome: failure}
+      min_count: 10
+    - name: exito
+      filter: {outcome: success}
+exceptions:
+  - src_ip: {in: "$admin_sources"}
+summary: >
+  {failures} fallos desde {src_ip} seguidos de {successes} logon(s) exitoso(s)
+  como {success_users} en {hosts}.
+false_positives:
+  - Usuario que tras varios errores recuerda su contraseña (raro con umbral 10).
+  - Pruebas de penetración autorizadas.
+triage:
+  - Identificar la cuenta comprometida y la actividad posterior al logon.
+  - Revisar conexiones salientes del host afectado tras el acceso.
+  - Confirmar con el dueño de la cuenta si reconoce el acceso.
+response:
+  - Deshabilitar o resetear la cuenta y cerrar sesiones activas.
+  - Aislar el host si hay actividad posterior sospechosa.
+  - Abrir incidente (severidad crítica).
+references:
+  - https://attack.mitre.org/techniques/T1110/
+  - https://attack.mitre.org/techniques/T1078/
