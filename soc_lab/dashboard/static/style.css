@@ -235,3 +235,10 @@ ul.clean li { margin-bottom: 4px; }
   dl.kv dt { margin-top: 6px; }
   .tile.hero .value { font-size: 40px; }
 }
+
+/* Casos */
+a.case-card { color: var(--ink); display: block; }
+a.case-card:hover { text-decoration: none; outline: 2px solid var(--accent); }
+.case-title { margin-top: 8px; }
+dl.kv.compact { grid-template-columns: 90px 1fr; font-size: 13px; margin-top: 10px; }
+.report p code, .card li code { background: var(--code-bg); padding: 1px 4px; border-radius: 4px; }

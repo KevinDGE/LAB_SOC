@@ -10,8 +10,11 @@ por el pipeline (``python -m soc_lab all``).
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from pathlib import Path
+
+from markupsafe import Markup, escape
 
 from flask import Flask, abort, jsonify, render_template, request
 
@@ -65,6 +68,19 @@ def create_app(data_dir: Path | str = "data") -> Flask:
     @app.context_processor
     def inject_nav():
         return {"nav": request.endpoint}
+
+    @app.template_filter("md_inline")
+    def md_inline(text: str) -> Markup:
+        """Markdown en línea mínimo (**negrita**, *cursiva*, `código`) sobre texto escapado."""
+        html = str(escape(text))
+        html = re.sub(r"`([^`]+)`", r"<code>\1</code>", html)
+        html = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", html)
+        html = re.sub(r"\*([^*]+)\*", r"<em>\1</em>", html)
+        return Markup(html)
+
+    @app.template_filter("ts_hms")
+    def ts_hms(value: str) -> str:
+        return value[11:19]
 
     @app.template_filter("hms")
     def hms(ts):

@@ -203,7 +203,7 @@ def lateral_movement(logs: RawLogs, rng: random.Random, day: datetime) -> Scenar
     # 15:05 – exfiltración desde DB01 al C2 (brecha de detección).
     ts = _t(day, 15, 5, 0)
     for _ in range(6):
-        ts += timedelta(minutes=rng.randint(1, 3))
+        ts += timedelta(minutes=rng.randint(1, 3), seconds=rng.randint(0, 59))
         logs.fw(ts, db.ip, rng.randint(49152, 65535), c2, 443,
                 bytes_=rng.randint(120_000_000, 160_000_000), rule="allow-web-out")
 

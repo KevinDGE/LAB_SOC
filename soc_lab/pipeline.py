@@ -71,3 +71,14 @@ def load_cases(data_dir: Path) -> list[dict]:
     if not path.exists():
         return []
     return json.loads(path.read_text(encoding="utf-8"))["cases"]
+
+
+def build_cases(data_dir: Path, reports_dir: Path = Path("reports")) -> tuple[list[dict], list[Path]]:
+    """Construye los casos de investigación y escribe sus reportes Markdown."""
+    from soc_lab.cases.builder import build_cases as _build, write_reports
+    from soc_lab.detection.engine import load_rules
+
+    alerts, _ = load_alerts(data_dir)
+    cases = _build(alerts, load_events(data_dir), load_rules())
+    cases_path(data_dir).write_text(json.dumps({"cases": cases}, indent=1, ensure_ascii=False), encoding="utf-8")
+    return cases, write_reports(cases, alerts, reports_dir)

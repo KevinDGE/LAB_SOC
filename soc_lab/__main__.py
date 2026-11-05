@@ -40,6 +40,24 @@ def cmd_docs(args: argparse.Namespace) -> None:
     print(f"[docs] {write_docs(Path('docs/detection-rules.md'))}")
 
 
+def cmd_cases(args: argparse.Namespace) -> None:
+    cases, reports = pipeline.build_cases(args.data, args.reports)
+    print(f"[cases] {len(cases)} casos → {pipeline.cases_path(args.data)}")
+    for case, path in zip(cases, reports):
+        m = case["metrics"]
+        print(f"  {case['case_id']}  {m['alerts']} alertas, {len(case['timeline'])} hitos, "
+              f"{m['duration_min']} min  → {path}")
+
+
+def cmd_all(args: argparse.Namespace) -> None:
+    """Pipeline completo: generar → normalizar → detectar → casos (→ servir)."""
+    cmd_generate(args)
+    cmd_detect(args)
+    cmd_cases(args)
+    if args.serve:
+        cmd_serve(args)
+
+
 def cmd_serve(args: argparse.Namespace) -> None:
     from soc_lab.dashboard.app import create_app
 
@@ -61,10 +79,22 @@ def build_parser() -> argparse.ArgumentParser:
     docs = sub.add_parser("docs", help="regenera docs/detection-rules.md desde los YAML")
     docs.set_defaults(func=cmd_docs)
 
+    cases = sub.add_parser("cases", help="construye los casos y sus reportes de incidente")
+    cases.add_argument("--reports", type=Path, default=Path("reports"))
+    cases.set_defaults(func=cmd_cases)
+
     serve = sub.add_parser("serve", help="levanta el dashboard web")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8000)
     serve.set_defaults(func=cmd_serve)
+
+    run_all = sub.add_parser("all", help="ejecuta todo el pipeline y opcionalmente el dashboard")
+    run_all.add_argument("--seed", type=int, default=DEFAULT_SEED)
+    run_all.add_argument("--reports", type=Path, default=Path("reports"))
+    run_all.add_argument("--serve", action="store_true", help="levanta el dashboard al terminar")
+    run_all.add_argument("--host", default="127.0.0.1")
+    run_all.add_argument("--port", type=int, default=8000)
+    run_all.set_defaults(func=cmd_all)
     return parser
 
 
